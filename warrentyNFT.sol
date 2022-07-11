@@ -5,21 +5,25 @@ pragma solidity ^0.8.7;
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol";
 
 contract WarrentyNFT is ERC721{
+    address public immutable owner;             // the deployer of the contract
+    mapping(address => bool) registeredSellers; // regestered sellers list
+    mapping(address => string) buyersHistory;   //buyers history
+    mapping(string => uint) allProducts;        // all products history 
+    string[] public allProductsNames;                  // all products names
+    uint public productsCount=0;                      //number of products count
+    uint public noOfSellers=0;                  // noOfSellers
 
     //structure to get the details of the seller
     struct seller{
         uint noOfProducts;
         mapping(string => uint) sellerProduct;   // product id and nameid
     }
-    mapping(address => seller) allSellers;      // object of seller
+    mapping(address => seller) allSellers;       // object of seller
 
-    address public immutable owner;             // the deployer of the contract
-    mapping(address => bool) registeredSellers; // regestered sellers list
-    mapping(address => string) buyersHistory;   //buyers history
-    mapping(string => uint) allProducts;        // all products history 
-    string[] public allProductNames;            // all products names
-    uint public productsCount=0;                //number of products count
-    uint public noOfSellers=0;                  // noOfSellers
+    //constructor for ERC contract intialization
+    constructor()ERC721("warrenty","WT"){
+        owner=msg.sender;
+    }
 
     //modifiers
     modifier onlyOwner{
@@ -31,11 +35,6 @@ contract WarrentyNFT is ERC721{
     modifier onlyRegesteredSellers{
         require(registeredSellers[msg.sender],"ur not the regesterd seller");
         _;
-    }
-
-    //constructor for ERC contract intialization
-    constructor()ERC721("warrenty","WT"){
-        owner=msg.sender;
     }
 
     //regestering the sellers and only the owner can call 
@@ -54,23 +53,27 @@ contract WarrentyNFT is ERC721{
         allSellers[msg.sender].noOfProducts=_noOfProducts;
         for(uint i=0;i<_noOfProducts;i++){
             allSellers[msg.sender].sellerProduct[_products[i]]=id[i];  //each seller products
-            allProducts[_products[i]]=id[i];                           //allpoducts and ids  
-            allProductNames[productsCount]=_products[i];               //allproducts in one array(iterable mapping to show the products names)
+            allProducts[_products[i]]=id[i];
+            allProductsNames.push(_products[i]);
             productsCount++;
         }
     }
-    //buy the product 
-    // function buy(string memory _product)external{
+    //show products on front 
+    function products()external view returns(string[] memory){
+        return allProductsNames;
+    }
+    
+    //minting the warrenty card
+    function warrentyCard(string memory productNameId)external{
+        _mint(msg.sender,allSellers[msg.sender].sellerProduct[productNameId]);
+    }
 
+     //buy the product 
+    function buy(string memory _product)external{
+        _mint(msg.sender,allProducts[_product]);
+    }
 
-    // }
+    //sell has to disable the warrenty completion time
+    function disableWarrenty()
 
-    // //show products on front 
-    // function displayProducts()external view returns(string[] memory){
-    //     return allProductNames;
-    // }
-    // //minting the warrenty card
-    // function warrentyCard(string memory productNameId)external{
-    //     _mint(msg.sender,allSellers[msg.sender].sellerProduct[productNameId]);
-    // }
 }
