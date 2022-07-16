@@ -89,8 +89,8 @@ contract WarrentyNFT is ERC721{
         for(uint i=0;i<allProductsNames.length;i++){
             if(keccak256(abi.encode(allProductsNames[i])) == keccak256(abi.encode(_product))){
                 allProductsNames[i]=allProductsNames[productsCount]; 
-                allProductsNames[productsCount]="";
-                allProducts[_product]=0;
+                delete allProductsNames[productsCount];
+                delete allProducts[_product];
                 break;           
             }
         }
