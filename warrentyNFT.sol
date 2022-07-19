@@ -2,7 +2,7 @@
 pragma solidity ^0.8.7;
 
 // contract for creating warrenty nft's for a product
-import "https://github.com/navin9000/rentableNFTUsingIERC4907/blob/master/ERC4907.sol";
+import "./ERC4907.sol";
 
 //ecommerce contract
 // which is divided into 5 parts
@@ -11,7 +11,9 @@ import "https://github.com/navin9000/rentableNFTUsingIERC4907/blob/master/ERC490
 // 3. buy the products by the user
 // 4. giving warrenty NFT's for products
 // 5. expirable warrenty NFT's 
+//6.reselling the products
 
+//testing in each module is required
 contract WarrentyNFT is ERC4907{
     address public immutable owner;                    // the deployer of the contract
     mapping(address => bool) registeredSellers;        // regestered sellers list
@@ -50,7 +52,7 @@ contract WarrentyNFT is ERC4907{
     }
 
     // 1. regestring the sellers by owner
-    function resgisterSeller(address _sellerAddress)external onlyOwner{
+    function resgisterSeller(address _sellerAddress)public onlyOwner{
         registeredSellers[_sellerAddress]=true;
         noOfSellers++;
     }
@@ -63,7 +65,7 @@ contract WarrentyNFT is ERC4907{
 
 
     // 2. add products to the ecommerce platform
-    function getDetails(uint _noOfProducts,uint[] memory id,string[] memory _products,uint[] memory prices,uint[] memory _expires)external onlyRegesteredSellers{
+    function getDetails(uint _noOfProducts,uint[] memory id,string[] memory _products,uint[] memory prices,uint[] memory _expires)public onlyRegesteredSellers{
         allSellers[msg.sender].noOfProducts = _noOfProducts;
         for(uint i=0;i<_noOfProducts;i++){
             allSellers[msg.sender].sellerProduct[_products[i]] = id[i];     //each seller products
@@ -120,14 +122,19 @@ contract WarrentyNFT is ERC4907{
     }
     
 
-    // //products NFTs
-    // function warrentyNFTs(string memory _product)external view returns(uint ){
-    //     return warrentyNFTsHistory[_product];
-    // }
+    //if buyer want to sell resell the product 
+    //1.he should fist register at the owners end
+    //2.then he get the complete owner ship of the warrenty NFT
+    //3.and repeating the same steps in getDetails function
+    function reSell(uint _noOfProducts,uint[] memory id,string[] memory _products,uint[] memory prices,uint[] memory _expires)external{
+        // checking that reseller having that product
+        for(uint i=0;i<_noOfProducts;i++){
+             require(keccak256(abi.encode(buyersHistory[msg.sender]))==keccak256(abi.encode(_products[i])),"ur not having product");
+            transferFrom(ownerOf(id[i]),msg.sender,id[i]); //giving complete ownership to the reseller
+        }
+        resgisterSeller(msg.sender);
+        getDetails(_noOfProducts,id,_products,prices,_expires);
+    }
 
-    // //sell has to disable the warrenty completion time
-    // function disableWarrenty(string memory _product) external{
-        
-    // }
 
 }
