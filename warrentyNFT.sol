@@ -2,7 +2,8 @@
 pragma solidity ^0.8.7;
 
 // contract for creating warrenty nft's for a product
-import "./ERC4907.sol";
+import "./rental.sol";
+
 
 //ecommerce contract
 // which is divided into 5 parts
@@ -65,7 +66,7 @@ contract WarrentyNFT is ERC4907{
 
 
     // 2. add products to the ecommerce platform
-    function getDetails(uint _noOfProducts,uint[] memory id,string[] memory _products,uint[] memory prices,uint[] memory _expires)public onlyRegesteredSellers{
+    function addProducts(uint _noOfProducts,uint[] memory id,string[] memory _products,uint[] memory prices,uint[] memory _expires)public onlyRegesteredSellers{
         allSellers[msg.sender].noOfProducts = _noOfProducts;
         for(uint i=0;i<_noOfProducts;i++){
             allSellers[msg.sender].sellerProduct[_products[i]] = id[i];     //each seller products
@@ -93,7 +94,8 @@ contract WarrentyNFT is ERC4907{
         require(!registeredSellers[msg.sender],"u are the seller");          // sellers cant buy for spaming
         require(msg.value > 0 && msg.value == productsPrices[_product],"insufficient funds");
         // _mint(msg.sender,allProducts[_product]);
-        setUser(allProducts[_product],ownerOf(allProducts[_product]),uint64(productExpires[_product]));   //setting up the user for decayed warrenty nft
+        //setuser is used to give the decayed NFT from that product Seller
+       setUser(allProducts[_product],ownerOf(allProducts[_product]),uint64(productExpires[_product]));   //setting up the user for decayed warrenty nft
         buyersHistory[msg.sender] = _product;
        // warrentyNFTsHistory[_product]=allProducts[_product];
         productsCount--;
@@ -108,6 +110,11 @@ contract WarrentyNFT is ERC4907{
         }
        // warrentyCard(_product);                                            // for warrenty nft
         productsPrices[_product] = 0;
+
+        //paying the product amount to the seller 
+        //note : when buyer transfers products price it will go to the contract 
+        //      and from contract to directly transfering funds to the seller
+       payable(ownerOf(allProducts[_product])).transfer(address(this).balance); 
     }
     
     // show prices
@@ -115,26 +122,20 @@ contract WarrentyNFT is ERC4907{
         return productsPrices[_product];
     }
 
-    
-    // 4. giving warrenty NFT's for products
-    function warrentyCard(string memory _product)internal{
-        _mint(msg.sender,allSellers[msg.sender].sellerProduct[_product]);
-    }
-    
-
     //if buyer want to sell resell the product 
     //1.he should fist register at the owners end
     //2.then he get the complete owner ship of the warrenty NFT
-    //3.and repeating the same steps in getDetails function
-    function reSell(uint _noOfProducts,uint[] memory id,string[] memory _products,uint[] memory prices,uint[] memory _expires)external{
+    //3.and repeating the same steps in addProducrs function
+    function reSell(uint _id,string memory _product,uint price)external{
         // checking that reseller having that product
-        for(uint i=0;i<_noOfProducts;i++){
-             require(keccak256(abi.encode(buyersHistory[msg.sender]))==keccak256(abi.encode(_products[i])),"ur not having product");
-            transferFrom(ownerOf(id[i]),msg.sender,id[i]); //giving complete ownership to the reseller
-        }
-        resgisterSeller(msg.sender);
-        getDetails(_noOfProducts,id,_products,prices,_expires);
+        require(registeredSellers[msg.sender],"ur not the registered seller");
+        require(keccak256(abi.encode(buyersHistory[msg.sender])) == keccak256(abi.encode(_product)),"ur not having product");
+        transferFrom(ownerOf(_id),msg.sender,_id); //giving complete ownership to the reseller
+        allProducts[_product]=_id;
+        allProductsNames[productsCount] = _product;
+        productsPrices[_product] = price;                      //products and prices history
+        productsCount++;
     }
 
 
-}
+}   
